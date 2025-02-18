@@ -1,30 +1,42 @@
 <?php
 session_start();
-require_once "config.php"; // Include database connection
+require_once 'config.php'; // Include database connection
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $first_name = trim($_POST['first_name']);
-    $last_name = trim($_POST['last_name']);
-    $email = trim($_POST['email']);
-    $password = trim($_POST['password']);
-    
-    if (!empty($first_name) && !empty($last_name) && !empty($email) && !empty($password)) {
-        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
-        $stmt = $conn->prepare("INSERT INTO users (first_name, last_name, email, password) VALUES (?, ?, ?, ?)");
-        $stmt->bind_param("ssss", $first_name, $last_name, $email, $hashed_password);
 
-        if ($stmt->execute()) {
-            echo json_encode(["success" => true, "message" => "Registration successful!"]);
-        } else {
-            echo json_encode(["success" => false, "message" => "Error: Email already exists!"]);
-        }
+// Initialize error and success messages
+$error = '';
+$success = '';
 
-        $stmt->close();
+// Handle registration form submission
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['first_name'], $_POST['last_name'], $_POST['email'], $_POST['password'])) {
+    $first_name = $_POST['first_name'];
+    $last_name = $_POST['last_name'];
+    $email = $_POST['email'];
+    $password = $_POST['password'];
+
+    // Check if the email already exists
+    $email_check_query = "SELECT * FROM users WHERE email = ?";
+    $email_check_stmt = $conn->prepare($email_check_query);
+    $email_check_stmt->bind_param('s', $email);
+    $email_check_stmt->execute();
+    $email_check_result = $email_check_stmt->get_result();
+
+    if ($email_check_result->num_rows > 0) {
+        $error = 'Email is already registered.';
     } else {
-        echo json_encode(["success" => false, "message" => "All fields are required!"]);
+        // Insert the new user into the database
+        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+        $insert_query = "INSERT INTO users (first_name, last_name, email, password) VALUES (?, ?, ?, ?)";
+        $insert_stmt = $conn->prepare($insert_query);
+        $insert_stmt->bind_param('ssss', $first_name, $last_name, $email, $hashed_password);
+        
+        if ($insert_stmt->execute()) {
+            $success = 'Registration successful! You can now log in.';
+        } else {
+            $error = 'There was an issue registering your account. Please try again.';
+        }
     }
-    exit;
 }
 ?>
 
@@ -35,6 +47,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - Syngo</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        :where([class^="ri-"])::before { content: "\f3c2"; }
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+    </style>
     <script>
         tailwind.config = {
             theme: {
@@ -63,67 +87,67 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     </script>
 </head>
-<body class="bg-gray-100">
+<body class="bg-gray-50 min-h-screen">
+    <div class="flex min-h-screen">
+        <div class="flex-1 flex flex-col justify-between">
+            <header class="p-6 flex justify-between items-center">
+                <a href="/" class="text-2xl font-['Pacifico'] text-primary">Syngo</a>
+                <nav class="flex items-center gap-8">
+                    <a href="/" class="text-gray-600 hover:text-primary">Home</a>
+                    <a href="/about" class="text-gray-600 hover:text-primary">About</a>
+                    <a href="/contact" class="text-gray-600 hover:text-primary">Contact</a>
+                </nav>
+            </header>
 
-    <!-- Navbar -->
-    <nav class="bg-green-500 p-4">
-        <div class="container mx-auto flex justify-between items-center">
-            <a href="index.php" class="text-white text-lg font-bold">Syngo</a>
-            <a href="login.php" class="text-white">Login</a>
-        </div>
-    </nav>
+            <main class="flex-1 flex items-center justify-center p-8">
+                <div class="w-full max-w-md">
+                    <div class="bg-white p-8 rounded-lg shadow-sm">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-2">Create a new account</h2>
+                        <p class="text-gray-600 mb-8">Fill in the details to sign up</p>
 
-    <!-- Registration Container -->
-    <div class="flex justify-center items-center min-h-screen">
-        <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
-            <h2 class="text-center text-2xl font-bold text-green-500 mb-4">Register</h2>
-            <form id="registerForm">
-                <div class="mb-4">
-                    <label class="block text-gray-700">First Name</label>
-                    <input type="text" name="first_name" class="w-full p-2 border rounded" required>
+                        <?php if ($error): ?>
+                            <div class="bg-red-100 text-red-700 p-4 rounded mb-4">
+                                <?= $error ?>
+                            </div>
+                        <?php endif; ?>
+
+                        <?php if ($success): ?>
+                            <div class="bg-green-100 text-green-700 p-4 rounded mb-4">
+                                <?= $success ?>
+                            </div>
+                        <?php endif; ?>
+
+                        <form action="register.php" method="POST" class="space-y-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" for="first_name">First Name</label>
+                                <input type="text" id="first_name" name="first_name" class="block w-full py-2 px-3 border border-gray-300 rounded focus:ring-2 focus:ring-primary focus:border-primary text-sm" placeholder="Enter your first name" required>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" for="last_name">Last Name</label>
+                                <input type="text" id="last_name" name="last_name" class="block w-full py-2 px-3 border border-gray-300 rounded focus:ring-2 focus:ring-primary focus:border-primary text-sm" placeholder="Enter your last name" required>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" for="email">Email</label>
+                                <input type="email" id="email" name="email" class="block w-full py-2 px-3 border border-gray-300 rounded focus:ring-2 focus:ring-primary focus:border-primary text-sm" placeholder="Enter your email" required>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" for="password">Password</label>
+                                <input type="password" id="password" name="password" class="block w-full py-2 px-3 border border-gray-300 rounded focus:ring-2 focus:ring-primary focus:border-primary text-sm" placeholder="Enter your password" required>
+                            </div>
+
+                            <button type="submit" class="w-full bg-primary text-white py-2 px-4 rounded hover:bg-primary/90 focus:ring-4 focus:ring-primary/20 whitespace-nowrap">Sign up</button>
+                        </form>
+
+                        <p class="mt-8 text-center text-sm text-gray-600">
+                            Already have an account? <a href="login.php" class="text-primary hover:text-primary/80">Sign in</a>
+                        </p>
+                    </div>
                 </div>
-                <div class="mb-4">
-                    <label class="block text-gray-700">Last Name</label>
-                    <input type="text" name="last_name" class="w-full p-2 border rounded" required>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-gray-700">Email</label>
-                    <input type="email" name="email" class="w-full p-2 border rounded" required>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-gray-700">Password</label>
-                    <input type="password" name="password" class="w-full p-2 border rounded" required>
-                </div>
-                <button type="submit" class="w-full bg-green-500 text-white p-2 rounded">Register</button>
-            </form>
-            <p class="text-center text-gray-600 mt-4">Already have an account? <a href="login.php" class="text-green-500">Login</a></p>
-            <p id="message" class="text-center mt-2"></p>
+            </main>
         </div>
     </div>
-
-    <!-- Footer -->
-    <footer class="bg-gray-200 p-4 text-center text-gray-700">
-        &copy; 2025 Syngo. All rights reserved.
-    </footer>
-
-    <script>
-        document.getElementById('registerForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            let formData = new FormData(this);
-
-            fetch('register.php', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                let msg = document.getElementById('message');
-                msg.textContent = data.message;
-                msg.className = data.success ? "text-green-500" : "text-red-500";
-            })
-            .catch(error => console.error('Error:', error));
-        });
-    </script>
-
 </body>
 </html>
