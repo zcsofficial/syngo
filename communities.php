@@ -19,7 +19,7 @@ $user = $user_result->fetch_assoc();
 
 // Fetch communities the user is a part of
 $communities_query = "
-    SELECT c.community_id, c.name, c.description, c.created_by
+    SELECT c.community_id, c.name, c.description
     FROM communities c
     JOIN community_members cm ON c.community_id = cm.community_id
     WHERE cm.user_id = ?

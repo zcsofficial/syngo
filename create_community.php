@@ -42,9 +42,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if (!isset($error_message)) {
-            // Insert the new community into the database
-            $stmt = $conn->prepare("INSERT INTO communities (name, description, created_by, image) VALUES (?, ?, ?, ?)");
-            $stmt->bind_param("ssis", $community_name, $community_description, $user_id, $community_image);
+            // Insert the new community into the database (Fix the number of columns)
+            $stmt = $conn->prepare("INSERT INTO communities (name, description, image) VALUES (?, ?, ?)");
+            $stmt->bind_param("sss", $community_name, $community_description, $community_image);
 
             if ($stmt->execute()) {
                 // Insert the user into the new community

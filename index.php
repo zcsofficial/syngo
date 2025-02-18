@@ -69,7 +69,7 @@
         <div class="max-w-4xl mx-auto px-4 relative">
             <h1 class="text-5xl font-bold text-gray-900 mb-6">Travel With New Friends</h1>
             <p class="text-xl text-gray-600 mb-8">Connect with like-minded travelers, plan amazing trips together, and create unforgettable memories. Join Syngo today and discover a new way to explore the world.</p>
-            <a href="/signup" class="px-8 py-3 bg-primary text-white text-lg hover:bg-primary/90 transition-colors !rounded-button whitespace-nowrap">Start Your Journey</a>
+            <a href="register.php" class="px-8 py-3 bg-primary text-white text-lg hover:bg-primary/90 transition-colors !rounded-button whitespace-nowrap">Start Your Journey</a>
         </div>
     </section>
 
@@ -137,7 +137,7 @@
                     </div>
                 </div>
                 <div class="bg-white rounded-lg shadow-sm overflow-hidden">
-                    <img src="https://public.readdy.ai/ai/img_res/215f320b1c319f6ff77796e74ccff2b0.jpg" alt="Beach Lovers" class="w-full h-48 object-cover">
+                    <img src="https://img.freepik.com/free-photo/wooden-board-empty-table-front-blue-sea-sky-background-perspective-wood-floor-sea-sky-can-be-used-display-montage-your-products-beach-summer-concepts_1253-804.jpg?t=st=1739869701~exp=1739873301~hmac=667071c90010c7f66a066debf0712a19b1eb711f8376e78a05e60b7d6b2865f1&w=1060" alt="Beach Lovers" class="w-full h-48 object-cover">
                     <div class="p-6">
                         <h3 class="text-xl font-semibold text-gray-900 mb-2">Beach Lovers</h3>
                         <p class="text-gray-600 mb-4">For those who dream of sun, sand, and sea.</p>
