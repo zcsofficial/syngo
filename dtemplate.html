@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syngo - Find Your Travel Companions</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+    <style>
+        :where([class^="ri-"])::before { content: "\f3c2"; }
+        .trip-card:hover { transform: translateY(-4px); }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #A5D6A7; border-radius: 3px; }
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2E7D32',
+                        secondary: '#A5D6A7'
+                    },
+                    borderRadius: {
+                        'none': '0px',
+                        'sm': '4px',
+                        DEFAULT: '8px',
+                        'md': '12px',
+                        'lg': '16px',
+                        'xl': '20px',
+                        '2xl': '24px',
+                        '3xl': '32px',
+                        'full': '9999px',
+                        'button': '8px'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 font-['Inter']">
+    <nav class="fixed top-0 left-0 right-0 h-16 bg-white shadow-sm z-50">
+        <div class="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
+            <div class="flex items-center gap-8">
+                <a href="#" class="text-2xl font-['Pacifico'] text-primary">logo</a>
+                <div class="relative">
+                    <input type="text" placeholder="Search destinations or trips..." class="w-[400px] h-10 pl-10 pr-4 text-sm rounded-full border border-gray-200 focus:outline-none focus:border-primary">
+                    <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <button class="!rounded-button px-4 h-10 bg-primary text-white flex items-center gap-2 whitespace-nowrap">
+                    <i class="ri-add-line w-4 h-4 flex items-center justify-center"></i>
+                    Create Trip
+                </button>
+                <div class="w-10 h-10 flex items-center justify-center relative cursor-pointer">
+                    <i class="ri-notification-3-line text-gray-600"></i>
+                    <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                </div>
+                <div class="flex items-center gap-3 cursor-pointer">
+                    <img src="https://public.readdy.ai/ai/img_res/cb6fd3e7b68878d46ddacbc3d3415e6d.jpg" class="w-10 h-10 rounded-full object-cover">
+                    <span class="text-sm font-medium">Emma Thompson</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 mt-20 mb-8 grid grid-cols-12 gap-6">
+        <aside class="col-span-3">
+            <div class="bg-white rounded-lg p-4 shadow-sm mb-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <img src="https://public.readdy.ai/ai/img_res/ef96e3fecf36463f62ed1a36b8ff8674.jpg" class="w-14 h-14 rounded-full object-cover">
+                    <div>
+                        <h3 class="font-semibold">Emma Thompson</h3>
+                        <p class="text-sm text-gray-500">Travel Enthusiast</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div class="text-center p-3 bg-gray-50 rounded-lg">
+                        <div class="font-semibold">12</div>
+                        <div class="text-sm text-gray-500">Trips</div>
+                    </div>
+                    <div class="text-center p-3 bg-gray-50 rounded-lg">
+                        <div class="font-semibold">5</div>
+                        <div class="text-sm text-gray-500">Communities</div>
+                    </div>
+                </div>
+                <button class="w-full !rounded-button h-10 border border-primary text-primary hover:bg-primary hover:text-white transition-colors whitespace-nowrap">View Profile</button>
+            </div>
+
+            <div class="bg-white rounded-lg p-4 shadow-sm">
+                <h3 class="font-semibold mb-4">My Communities</h3>
+                <div class="space-y-4">
+                    <div class="flex items-center gap-3">
+                        <img src="https://public.readdy.ai/ai/img_res/afabedc3c06307d4a203c7ed05fb24e3.jpg" class="w-10 h-10 rounded-full object-cover">
+                        <div>
+                            <div class="font-medium">Mountain Explorers</div>
+                            <div class="text-sm text-gray-500">1.2k members</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <img src="https://public.readdy.ai/ai/img_res/315e841af04f97bfd2c1b241646113a5.jpg" class="w-10 h-10 rounded-full object-cover">
+                        <div>
+                            <div class="font-medium">Beach Lovers</div>
+                            <div class="text-sm text-gray-500">856 members</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <img src="https://public.readdy.ai/ai/img_res/cf01fd5f9f3ae382b06b178f18635dac.jpg" class="w-10 h-10 rounded-full object-cover">
+                        <div>
+                            <div class="font-medium">City Explorers</div>
+                            <div class="text-sm text-gray-500">2.3k members</div>
+                        </div>
+                    </div>
+                </div>
+                <button class="w-full !rounded-button h-10 bg-gray-50 text-gray-700 mt-4 hover:bg-gray-100 whitespace-nowrap">View All Communities</button>
+            </div>
+        </aside>
+
+        <main class="col-span-6">
+            <div class="bg-white rounded-lg p-4 shadow-sm mb-6">
+                <div class="flex items-center gap-4 mb-6">
+                    <button class="!rounded-full px-4 h-8 bg-primary text-white whitespace-nowrap">Discover Trips</button>
+                    <button class="!rounded-full px-4 h-8 bg-gray-50 text-gray-700 whitespace-nowrap">My Trips</button>
+                </div>
+
+                <div class="space-y-6">
+                    <div class="trip-card bg-white rounded-lg border border-gray-100 overflow-hidden transition-transform duration-200">
+                        <img src="https://public.readdy.ai/ai/img_res/1bd05803881e9092ae184293a7b797fb.jpg" class="w-full h-48 object-cover">
+                        <div class="p-4">
+                            <div class="flex items-start justify-between mb-3">
+                                <div>
+                                    <h3 class="font-semibold text-lg">Mountain Lake Camping Trip</h3>
+                                    <p class="text-sm text-gray-500">Banff National Park, Canada</p>
+                                </div>
+                                <div class="flex items-center gap-1 text-sm text-yellow-500">
+                                    <i class="ri-star-fill w-4 h-4 flex items-center justify-center"></i>
+                                    <span>4.8</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-4 mb-4">
+                                <div class="flex items-center gap-1 text-sm text-gray-500">
+                                    <i class="ri-calendar-line w-4 h-4 flex items-center justify-center"></i>
+                                    <span>Mar 15 - Mar 20</span>
+                                </div>
+                                <div class="flex items-center gap-1 text-sm text-gray-500">
+                                    <i class="ri-group-line w-4 h-4 flex items-center justify-center"></i>
+                                    <span>6/8 spots left</span>
+                                </div>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-4">Join us for an unforgettable 5-day camping adventure at the stunning Banff National Park. Experience pristine nature, hiking trails, and evening campfires under the stars.</p>
+                            <div class="flex items-center justify-between">
+                                <div class="flex -space-x-2">
+                                    <img src="https://public.readdy.ai/ai/img_res/55c1d62e96bc180beacf9ca552b82d65.jpg" class="w-8 h-8 rounded-full border-2 border-white">
+                                    <img src="https://public.readdy.ai/ai/img_res/38cf82e625e9390a82217075c7ec912f.jpg" class="w-8 h-8 rounded-full border-2 border-white">
+                                    <img src="https://public.readdy.ai/ai/img_res/04ee95329a0fb6df92583feab4bc461d.jpg" class="w-8 h-8 rounded-full border-2 border-white">
+                                </div>
+                                <button class="!rounded-button px-4 h-10 bg-primary text-white whitespace-nowrap">Join Trip</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="trip-card bg-white rounded-lg border border-gray-100 overflow-hidden transition-transform duration-200">
+                        <img src="https://public.readdy.ai/ai/img_res/89904e1365f978d935515cdedc3d1eab.jpg" class="w-full h-48 object-cover">
+                        <div class="p-4">
+                            <div class="flex items-start justify-between mb-3">
+                                <div>
+                                    <h3 class="font-semibold text-lg">Island Paradise Getaway</h3>
+                                    <p class="text-sm text-gray-500">Maldives</p>
+                                </div>
+                                <div class="flex items-center gap-1 text-sm text-yellow-500">
+                                    <i class="ri-star-fill w-4 h-4 flex items-center justify-center"></i>
+                                    <span>4.9</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-4 mb-4">
+                                <div class="flex items-center gap-1 text-sm text-gray-500">
+                                    <i class="ri-calendar-line w-4 h-4 flex items-center justify-center"></i>
+                                    <span>Apr 5 - Apr 12</span>
+                                </div>
+                                <div class="flex items-center gap-1 text-sm text-gray-500">
+                                    <i class="ri-group-line w-4 h-4 flex items-center justify-center"></i>
+                                    <span>3/6 spots left</span>
+                                </div>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-4">Experience luxury and adventure in the Maldives. Enjoy water sports, sunset cruises, and stay in overwater bungalows. Perfect for beach lovers and photography enthusiasts.</p>
+                            <div class="flex items-center justify-between">
+                                <div class="flex -space-x-2">
+                                    <img src="https://public.readdy.ai/ai/img_res/23cd4a9ce352388b330d82b68a49945c.jpg" class="w-8 h-8 rounded-full border-2 border-white">
+                                    <img src="https://public.readdy.ai/ai/img_res/0d663cf31ee9e90f4813585e4f52aa87.jpg" class="w-8 h-8 rounded-full border-2 border-white">
+                                    <img src="https://public.readdy.ai/ai/img_res/c852eb469ffe95109367ab35f4708994.jpg" class="w-8 h-8 rounded-full border-2 border-white">
+                                </div>
+                                <button class="!rounded-button px-4 h-10 bg-primary text-white whitespace-nowrap">Join Trip</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <aside class="col-span-3">
+            <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+                <div class="h-[300px] relative">
+                    <img src="https://public.readdy.ai/gen_page/map_placeholder_1280x720.png" class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-black/5"></div>
+                </div>
+                <div class="p-4">
+                    <h3 class="font-semibold mb-4">Quick Actions</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <button class="!rounded-button h-10 bg-primary text-white whitespace-nowrap">
+                            <i class="ri-add-line w-4 h-4 flex items-center justify-center mr-1"></i>
+                            New Trip
+                        </button>
+                        <button class="!rounded-button h-10 bg-secondary text-primary whitespace-nowrap">
+                            <i class="ri-group-line w-4 h-4 flex items-center justify-center mr-1"></i>
+                            Join Random
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg p-4 shadow-sm mt-6">
+                <h3 class="font-semibold mb-4">Trip Activity</h3>
+                <div class="space-y-4">
+                    <div class="flex items-start gap-3">
+                        <img src="https://public.readdy.ai/ai/img_res/15f51bb9339ee6fcb8d27fa867a61f1e.jpg" class="w-8 h-8 rounded-full">
+                        <div>
+                            <p class="text-sm"><span class="font-medium">Alex Chen</span> joined Mountain Lake Camping Trip</p>
+                            <p class="text-xs text-gray-500">2 hours ago</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <img src="https://public.readdy.ai/ai/img_res/29d6a70884702d891a43491086018625.jpg" class="w-8 h-8 rounded-full">
+                        <div>
+                            <p class="text-sm"><span class="font-medium">Sarah Wilson</span> created a new trip to Bali</p>
+                            <p class="text-xs text-gray-500">4 hours ago</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <img src="https://public.readdy.ai/ai/img_res/81e435344e0fc9d1bebfb0fd8cab3212.jpg" class="w-8 h-8 rounded-full">
+                        <div>
+                            <p class="text-sm"><span class="font-medium">Mike Johnson</span> rated Iceland Trip 5 stars</p>
+                            <p class="text-xs text-gray-500">6 hours ago</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <div id="createTripModal" class="fixed inset-0 bg-black/50 z-50 hidden">
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] bg-white rounded-lg">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-semibold">Create New Trip</h2>
+                    <button class="text-gray-400 hover:text-gray-600" onclick="document.getElementById('createTripModal').style.display='none'">
+                        <i class="ri-close-line w-6 h-6 flex items-center justify-center"></i>
+                    </button>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Trip Title</label>
+                        <input type="text" class="w-full h-10 px-3 rounded border border-gray-200 focus:outline-none focus:border-primary" placeholder="Enter trip title">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Destination</label>
+                        <input type="text" class="w-full h-10 px-3 rounded border border-gray-200 focus:outline-none focus:border-primary" placeholder="Enter destination">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Start Date</label>
+                            <input type="date" class="w-full h-10 px-3 rounded border border-gray-200 focus:outline-none focus:border-primary">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">End Date</label>
+                            <input type="date" class="w-full h-10 px-3 rounded border border-gray-200 focus:outline-none focus:border-primary">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Group Size</label>
+                        <input type="number" class="w-full h-10 px-3 rounded border border-gray-200 focus:outline-none focus:border-primary" placeholder="Enter maximum number of participants">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Description</label>
+                        <textarea class="w-full h-32 px-3 py-2 rounded border border-gray-200 focus:outline-none focus:border-primary resize-none" placeholder="Describe your trip"></textarea>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-4 mt-6">
+                    <button class="!rounded-button px-4 h-10 border border-gray-200 whitespace-nowrap" onclick="document.getElementById('createTripModal').style.display='none'">Cancel</button>
+                    <button class="!rounded-button px-4 h-10 bg-primary text-white whitespace-nowrap">Create Trip</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.querySelector('button:contains("Create Trip")').addEventListener('click', function() {
+            document.getElementById('createTripModal').style.display = 'block';
+        });
+    </script>
+</body>
+</html>

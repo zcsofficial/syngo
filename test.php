@@ -17,25 +17,24 @@ $user_query->execute();
 $user_result = $user_query->get_result();
 $user = $user_result->fetch_assoc();
 
-
 // Fetch trips for all users
 $trips_query = "SELECT * FROM trips ORDER BY created_at DESC";
 $trips_stmt = $conn->prepare($trips_query);
 $trips_stmt->execute();
 $trips_result = $trips_stmt->get_result();
 
-$trips_query = "SELECT trip_id, title, destination, start_date, end_date, group_size, description, trip_image FROM trips";
-$trips_stmt = $conn->prepare($trips_query);
-$trips_stmt->execute();
-$trips_result = $trips_stmt->get_result();
+// Fetch trips created by the logged-in user
+$user_trips_query = "SELECT trip_id, title, destination, start_date, end_date, group_size, description, trip_image FROM trips WHERE created_by = ?";
+$user_trips_stmt = $conn->prepare($user_trips_query);
+$user_trips_stmt->bind_param("i", $user_id);
+$user_trips_stmt->execute();
+$user_trips_result = $user_trips_stmt->get_result();
 
-
-// Fetch communities
+// Fetch communities for all users
 $communities_query = "SELECT * FROM communities";
 $communities_query_stmt = $conn->prepare($communities_query);
 $communities_query_stmt->execute();
 $communities_result = $communities_query_stmt->get_result();
-
 
 // Fetch recent activities
 $activity_query = "SELECT activity_log.*, users.first_name, users.last_name, users.profile_picture 
@@ -75,11 +74,8 @@ $activity_result = $activity_query_stmt->get_result();
             theme: {
                 extend: {
                     colors: {
-                        primary: '#22C55E',
-                        secondary: '#E5E7EB'
-                    },
-                    fontFamily: {
-                        sans: ['Poppins', 'sans-serif'],
+                        primary: '#2E7D32',
+                        secondary: '#A5D6A7'
                     },
                     borderRadius: {
                         'none': '0px',
@@ -127,7 +123,6 @@ $activity_result = $activity_query_stmt->get_result();
     </div>
 </nav>
 
-
 <!-- Dashboard Container -->
 <div class="max-w-7xl mx-auto px-4 mt-20 mb-8 grid grid-cols-12 gap-6">
     <!-- Sidebar Section -->
@@ -142,7 +137,7 @@ $activity_result = $activity_query_stmt->get_result();
             </div>
             <div class="grid grid-cols-2 gap-4 mb-4">
                 <div class="text-center p-3 bg-gray-50 rounded-lg">
-                    <div class="font-semibold"><?= $trips_result->num_rows ?></div>
+                    <div class="font-semibold"><?= $user_trips_result->num_rows ?></div>
                     <div class="text-sm text-gray-500">Trips</div>
                 </div>
                 <div class="text-center p-3 bg-gray-50 rounded-lg">
@@ -151,11 +146,10 @@ $activity_result = $activity_query_stmt->get_result();
                 </div>
             </div>
             <a href="profile.php">
-  <button class="w-full !rounded-button h-10 border border-primary text-primary hover:bg-primary hover:text-white transition-colors whitespace-nowrap">
-    View Profile
-  </button>
-</a>
-
+                <button class="w-full !rounded-button h-10 border border-primary text-primary hover:bg-primary hover:text-white transition-colors whitespace-nowrap">
+                    View Profile
+                </button>
+            </a>
         </div>
 
         <!-- My Communities Section (Aligned under Profile Section) -->
@@ -172,102 +166,28 @@ $activity_result = $activity_query_stmt->get_result();
                     </div>
                 <?php endwhile; ?>
             </div>
-            <a href="communities.php">
-  <button class="w-full !rounded-button h-10 bg-gray-50 text-gray-700 mt-4 hover:bg-gray-100 whitespace-nowrap">
-    View All Communities
-  </button>
-</a>
-
-        </div>
-        <!-- Trip Activity Section -->
-        <div class="bg-white rounded-lg p-4 shadow-sm mt-6">
-            <h3 class="font-semibold mb-4">Trip Activity</h3>
-            <div class="space-y-4">
-                <?php while ($activity = $activity_result->fetch_assoc()) : ?>
-                    <div class="flex items-start gap-3">
-                        <img src="<?= $activity['profile_picture'] ?>" class="w-8 h-8 rounded-full">
-                        <div>
-                            <p class="text-sm"><span class="font-medium"><?= htmlspecialchars($activity['first_name'] . ' ' . $activity['last_name']) ?></span> <?= htmlspecialchars($activity['activity_details']) ?></p>
-                            <p class="text-xs text-gray-500"><?= date('M d, Y h:i A', strtotime($activity['created_at'])) ?></p>
-                        </div>
-                    </div>
-                <?php endwhile; ?>
-            </div>
+            <a href="communities.php" class="mt-4 text-sm text-primary hover:text-primary-dark">See all communities</a>
         </div>
     </aside>
 
-<!-- Main Content Section -->
-<div class="col-span-12 sm:col-span-9">
-    <div class="bg-white rounded-lg p-6 shadow-sm">
-        <h2 class="text-2xl font-bold mb-4">My Trips</h2>
-        <input type="text" id="search" class="w-full p-2 border rounded mb-4" placeholder="Search Trips..." onkeyup="searchTrips()">
-
-        <div id="trip-list">
+    <!-- Main Content Section -->
+    <div class="col-span-12 sm:col-span-9">
+        <h2 class="font-semibold text-lg mb-4">Explore Trips</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             <?php while ($trip = $trips_result->fetch_assoc()) : ?>
-                <?php
-                // Fetch participants for the trip
-                $participants_query = "SELECT users.profile_picture FROM trip_members 
-                                       JOIN users ON trip_members.user_id = users.user_id 
-                                       WHERE trip_members.trip_id = ?";
-                $participants_stmt = $conn->prepare($participants_query);
-                $participants_stmt->bind_param("i", $trip['trip_id']);
-                $participants_stmt->execute();
-                $participants_result = $participants_stmt->get_result();
-                $participants = [];
-                while ($participant = $participants_result->fetch_assoc()) {
-                    $participants[] = $participant['profile_picture'];
-                }
-                $spots_left = $trip['group_size'] - count($participants);
-                ?>
-
-                <div class="trip-card bg-white rounded-lg border border-gray-100 overflow-hidden mb-4">
-                    <!-- Display trip image if available, else show a default image -->
-                    <img src="<?= htmlspecialchars($trip['trip_image']) ?: 'default-image.jpg' ?>" class="w-full h-48 object-cover">
-                    <div class="p-4">
-                        <h3 class="font-semibold text-lg"><?= htmlspecialchars($trip['title']) ?></h3>
-                        <p class="text-sm text-gray-500"><?= htmlspecialchars($trip['destination']) ?></p>
-                        <div class="flex items-center gap-4 mb-4">
-                            <span class="text-sm text-gray-500"><?= date('M d', strtotime($trip['start_date'])) ?> - <?= date('M d', strtotime($trip['end_date'])) ?></span>
-                            <span class="text-sm text-gray-500"><?= $spots_left ?>/<?= $trip['group_size'] ?> spots left</span>
-                        </div>
-                        <p class="text-sm text-gray-600 mb-4"><?= htmlspecialchars($trip['description']) ?></p>
-                        <div class="flex items-center justify-between">
-                            <div class="flex -space-x-2">
-                                <?php foreach ($participants as $participant_image) : ?>
-                                    <img src="<?= $participant_image ?>" class="w-8 h-8 rounded-full border-2 border-white">
-                                <?php endforeach; ?>
-                            </div>
-                            <!-- Updated Join Trip button with dynamic trip_id -->
-                            <a href="join_trip.php?trip_id=<?= $trip['trip_id'] ?>">
-                                <button class="!rounded-button px-4 h-10 bg-primary text-white whitespace-nowrap">
-                                    Join Trip
-                                </button>
-                            </a>
-                        </div>
+                <div class="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow">
+                    <img src="<?= $trip['trip_image'] ?: 'default-trip.jpg' ?>" class="w-full h-40 rounded-lg object-cover mb-4">
+                    <h3 class="font-medium"><?= htmlspecialchars($trip['title']) ?></h3>
+                    <p class="text-sm text-gray-500"><?= htmlspecialchars($trip['destination']) ?></p>
+                    <p class="mt-2 text-sm text-gray-600"><?= substr(htmlspecialchars($trip['description']), 0, 100) ?>...</p>
+                    <div class="mt-3">
+                        <button class="w-full bg-primary text-white py-2 rounded-md">Join Trip</button>
                     </div>
                 </div>
             <?php endwhile; ?>
         </div>
     </div>
 </div>
-
-
-<script>
-    function searchTrips() {
-        var input = document.getElementById("search").value.toLowerCase();
-        var tripCards = document.querySelectorAll(".trip-card");
-
-        tripCards.forEach(function(card) {
-            var title = card.querySelector("h3").innerText.toLowerCase();
-            var destination = card.querySelector("p.text-sm.text-gray-500").innerText.toLowerCase();
-            if (title.includes(input) || destination.includes(input)) {
-                card.style.display = "";
-            } else {
-                card.style.display = "none";
-            }
-        });
-    }
-</script>
 
 </body>
 </html>
