@@ -13,6 +13,13 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = $_SESSION['user_id'];
 
+// Fetch user data for navbar
+$user_query = $conn->prepare("SELECT first_name, last_name, email, profile_picture FROM users WHERE user_id = ?");
+$user_query->bind_param("i", $user_id);
+$user_query->execute();
+$user_result = $user_query->get_result();
+$user = $user_result->fetch_assoc();
+
 // Get the trip ID from the URL
 if (isset($_GET['trip_id'])) {
     $trip_id = (int)$_GET['trip_id'];
@@ -39,13 +46,21 @@ if (isset($_GET['trip_id'])) {
 
         // Fetch the participants for this trip
         $participantsQuery = "SELECT users.user_id, users.first_name, users.last_name, users.profile_picture 
-                               FROM trip_members 
-                               JOIN users ON trip_members.user_id = users.user_id 
-                               WHERE trip_members.trip_id = ?";
+                              FROM trip_members 
+                              JOIN users ON trip_members.user_id = users.user_id 
+                              WHERE trip_members.trip_id = ?";
         $stmt = $conn->prepare($participantsQuery);
         $stmt->bind_param("i", $trip_id);
         $stmt->execute();
         $participantsResult = $stmt->get_result();
+
+        // Check if the user is a member of the trip
+        $checkQuery = "SELECT * FROM trip_members WHERE trip_id = ? AND user_id = ?";
+        $stmt = $conn->prepare($checkQuery);
+        $stmt->bind_param("ii", $trip_id, $user_id);
+        $stmt->execute();
+        $is_member_result = $stmt->get_result();
+        $is_member = $is_member_result->num_rows > 0;
     } else {
         header('Location: index.php');
         exit;
@@ -59,22 +74,18 @@ if (isset($_GET['trip_id'])) {
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Syngo Profile</title>
+    <title>Syngo - Trip Details</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet"/>
     <style>
-        /* Custom colors for Syngo */
-        .bg-primary {
-            background-color: #22C55E; /* Syngo's primary color */
-        }
-        .text-primary {
-            color: #22C55E;
-        }
+        :where([class^="ri-"])::before { content: "\f3c2"; }
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
     <script>
         tailwind.config = {
@@ -104,76 +115,85 @@ if (isset($_GET['trip_id'])) {
         }
     </script>
 </head>
-<body class="bg-gray-100">
-    <!-- Navbar -->
+<body class="bg-gray-100 font-sans min-h-screen">
+    <!-- Navbar (Matched with dashboard.php) -->
     <nav class="fixed top-0 left-0 right-0 h-16 bg-white shadow-sm z-50">
         <div class="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
-            <div class="flex items-center gap-8">
-                <a href="index.php" class="text-2xl font-['Pacifico'] text-primary">Syngo</a>
+            <div class="flex items-center gap-4 sm:gap-8">
+                <a href="index.php" class="text-xl sm:text-2xl font-['Pacifico'] text-primary">Syngo</a>
+                <div class="relative hidden sm:block">
+                    <input type="text" id="search-bar" placeholder="Search destinations or trips..." class="w-40 sm:w-64 md:w-[400px] h-10 pl-10 pr-4 text-sm rounded-full border border-gray-200 focus:outline-none focus:border-primary">
+                    <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                </div>
             </div>
-            <div class="flex items-center gap-4">
-                <!-- Dashboard link -->
-                <a href="dashboard.php" class="text-green">Dashboard</a>
-                <!-- Profile section -->
-                <div class="flex items-center gap-3 cursor-pointer">
-                    <img src="<?= $user['profile_picture'] ?: 'https://public.readdy.ai/ai/img_res/cb6fd3e7b68878d46ddacbc3d3415e6d.jpg' ?>" class="w-10 h-10 rounded-full object-cover">
-                    <span class="text-sm font-medium"><?= $user['first_name'] . ' ' . $user['last_name'] ?></span>
+            <div class="flex items-center gap-2 sm:gap-4">
+                <a href="create_trip.php" class="!rounded-button px-3 sm:px-4 h-9 sm:h-10 bg-primary text-white text-sm flex items-center gap-2 whitespace-nowrap">Create Trip</a>
+                <div class="w-8 sm:w-10 h-8 sm:h-10 flex items-center justify-center relative cursor-pointer">
+                    <i class="ri-notification-3-line text-gray-600 text-lg sm:text-xl"></i>
+                    <span class="absolute top-0 sm:top-1 right-0 sm:right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                </div>
+                <div class="flex items-center gap-2 sm:gap-3 cursor-pointer">
+                    <img src="<?= $user['profile_picture'] ?: 'https://public.readdy.ai/ai/img_res/cb6fd3e7b68878d46ddacbc3d3415e6d.jpg' ?>" class="w-8 sm:w-10 h-8 sm:h-10 rounded-full object-cover">
+                    <span class="text-xs sm:text-sm font-medium hidden sm:block"><?= htmlspecialchars($user['first_name'] . " " . $user['last_name']) ?></span>
+                    <a href="logout.php" class="text-xs sm:text-sm text-red-600 ml-2">Logout</a>
                 </div>
             </div>
         </div>
     </nav>
 
     <!-- Main Content Section -->
-    <div class="max-w-4xl mx-auto px-4 py-24 pt-20">
+    <div class="max-w-4xl mx-auto px-4 py-16 sm:py-24 pt-20">
         <div class="bg-white shadow-lg rounded-lg overflow-hidden">
-            <div class="p-8">
-                <h2 class="text-2xl font-semibold text-gray-800"><?= htmlspecialchars($trip['title']) ?></h2>
-                <p class="text-gray-600"><?= htmlspecialchars($trip['description']) ?></p>
+            <div class="p-4 sm:p-8">
+                <h2 class="text-xl sm:text-2xl font-semibold text-gray-800 mb-2"><?= htmlspecialchars($trip['title']) ?></h2>
+                <p class="text-xs sm:text-sm text-gray-600 mb-4"><?= htmlspecialchars($trip['description']) ?></p>
 
-                <div class="mt-4">
-                    <p><strong>Destination:</strong> <?= htmlspecialchars($trip['destination']) ?></p>
-                    <p><strong>Start Date:</strong> <?= date('M d, Y', strtotime($trip['start_date'])) ?></p>
-                    <p><strong>End Date:</strong> <?= date('M d, Y', strtotime($trip['end_date'])) ?></p>
-                    <p><strong>Group Size:</strong> <?= $group_size ?></p>
-                    <p><strong>Current Members:</strong> <?= $members['total_members'] ?></p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <p class="text-xs sm:text-sm"><strong>Destination:</strong> <?= htmlspecialchars($trip['destination']) ?></p>
+                        <p class="text-xs sm:text-sm"><strong>Start Date:</strong> <?= date('M d, Y', strtotime($trip['start_date'])) ?></p>
+                        <p class="text-xs sm:text-sm"><strong>End Date:</strong> <?= date('M d, Y', strtotime($trip['end_date'])) ?></p>
+                    </div>
+                    <div>
+                        <p class="text-xs sm:text-sm"><strong>Group Size:</strong> <?= $group_size ?></p>
+                        <p class="text-xs sm:text-sm"><strong>Current Members:</strong> <?= $members['total_members'] ?></p>
+                    </div>
                 </div>
 
                 <!-- Participants -->
                 <div class="mt-6">
-                    <h3 class="text-xl font-semibold mb-4">Participants</h3>
-                    <div class="flex space-x-4">
+                    <h3 class="text-lg sm:text-xl font-semibold mb-4">Participants</h3>
+                    <ul class="space-y-3">
                         <?php while ($participant = $participantsResult->fetch_assoc()) : ?>
-                            <div class="flex items-center space-x-2">
-                                <img src="<?= $participant['profile_picture'] ?: 'default-profile.jpg' ?>" class="w-10 h-10 rounded-full" alt="<?= htmlspecialchars($participant['first_name'] . ' ' . $participant['last_name']) ?>">
-                                <p class="text-sm"><?= htmlspecialchars($participant['first_name'] . ' ' . $participant['last_name']) ?></p>
-                            </div>
+                            <li>
+                                <a href="member.php?user_id=<?= $participant['user_id'] ?>" class="flex items-center space-x-3 hover:bg-gray-50 p-2 rounded">
+                                    <img src="<?= $participant['profile_picture'] ?: 'default-profile.jpg' ?>" class="w-8 sm:w-10 h-8 sm:h-10 rounded-full object-cover" alt="<?= htmlspecialchars($participant['first_name'] . ' ' . $participant['last_name']) ?>">
+                                    <p class="text-xs sm:text-sm"><?= htmlspecialchars($participant['first_name'] . ' ' . $participant['last_name']) ?></p>
+                                </a>
+                            </li>
                         <?php endwhile; ?>
-                    </div>
+                    </ul>
                 </div>
 
-                <!-- Join Trip Button -->
-                <div class="mt-6">
-                    <?php
-                    // Check if the user is already a member of the trip
-                    $checkQuery = "SELECT * FROM trip_members WHERE trip_id = ? AND user_id = ?";
-                    $stmt = $conn->prepare($checkQuery);
-                    $stmt->bind_param("ii", $trip_id, $user_id);
-                    $stmt->execute();
-                    $result = $stmt->get_result();
-
-                    if ($result->num_rows > 0) {
-                        echo "<p class='text-green-600'>You are already a member of this trip.</p>";
-                    } else {
-                        // If the trip is not full, show the join button
-                        if ($members['total_members'] < $group_size) {
-                            echo "<a href='join_trip.php?trip_id=" . $trip_id . "'>
-                                    <button class='bg-primary text-white px-6 py-2 rounded-md'>Join This Trip</button>
-                                  </a>";
-                        } else {
-                            echo "<p class='text-red-600'>This trip is already full.</p>";
-                        }
-                    }
-                    ?>
+                <!-- Action Buttons -->
+                <div class="mt-6 flex flex-col sm:flex-row gap-4">
+                    <?php if ($is_member) : ?>
+                        <a href="chat_group.php?trip_id=<?= $trip_id ?>">
+                            <button class="!rounded-button px-4 sm:px-6 py-2 bg-primary text-white text-sm sm:text-base hover:bg-primary/90 whitespace-nowrap">
+                                Chat
+                            </button>
+                        </a>
+                    <?php else : ?>
+                        <?php if ($members['total_members'] < $group_size) : ?>
+                            <a href="join_trip.php?trip_id=<?= $trip_id ?>">
+                                <button class="!rounded-button px-4 sm:px-6 py-2 bg-primary text-white text-sm sm:text-base hover:bg-primary/90 whitespace-nowrap">
+                                    Join This Trip
+                                </button>
+                            </a>
+                        <?php else : ?>
+                            <p class="text-xs sm:text-sm text-red-600">This trip is already full.</p>
+                        <?php endif; ?>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>

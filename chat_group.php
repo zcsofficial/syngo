@@ -10,65 +10,55 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = $_SESSION['user_id'];
 
-// Fetch user data for navbar
+// Fetch user data for navbar and messages
 $user_query = $conn->prepare("SELECT first_name, last_name, profile_picture FROM users WHERE user_id = ?");
 $user_query->bind_param("i", $user_id);
 $user_query->execute();
 $user_result = $user_query->get_result();
 $user = $user_result->fetch_assoc();
 
-// Get the community ID from the URL
-if (!isset($_GET['community_id'])) {
-    header('Location: communities.php');
+// Get the trip ID from the URL
+if (!isset($_GET['trip_id'])) {
+    header('Location: dashboard.php');
     exit();
 }
 
-$community_id = (int)$_GET['community_id'];
+$trip_id = (int)$_GET['trip_id'];
 
-// Fetch community details
-$community_query = $conn->prepare("SELECT * FROM communities WHERE community_id = ?");
-$community_query->bind_param("i", $community_id);
-$community_query->execute();
-$community_result = $community_query->get_result();
+// Fetch trip and group details
+$group_query = $conn->prepare("SELECT tg.group_id, t.title FROM trip_groups tg JOIN trips t ON tg.trip_id = t.trip_id WHERE tg.trip_id = ?");
+$group_query->bind_param("i", $trip_id);
+$group_query->execute();
+$group_result = $group_query->get_result();
 
-if ($community_result->num_rows === 0) {
-    header("Location: communities.php");
+if ($group_result->num_rows === 0) {
+    header('Location: dashboard.php');
     exit();
 }
 
-$community = $community_result->fetch_assoc();
+$group = $group_result->fetch_assoc();
+$group_id = $group['group_id'];
+$trip_title = $group['title'];
 
-// Check if user is part of the community
-$check_member_query = $conn->prepare("SELECT * FROM community_members WHERE community_id = ? AND user_id = ?");
-$check_member_query->bind_param("ii", $community_id, $user_id);
-$check_member_query->execute();
-$check_member_result = $check_member_query->get_result();
+// Check if the user is a member of the trip group
+$member_query = $conn->prepare("SELECT * FROM trip_group_members WHERE group_id = ? AND user_id = ?");
+$member_query->bind_param("ii", $group_id, $user_id);
+$member_query->execute();
+$member_result = $member_query->get_result();
 
-if ($check_member_result->num_rows == 0) {
-    header("Location: communities.php");
+if ($member_result->num_rows === 0) {
+    header('Location: trip_details.php?trip_id=' . $trip_id);
     exit();
 }
 
-// Fetch chat messages
-$messages_query = $conn->prepare("
-    SELECT cm.message_id, cm.message, cm.created_at, u.user_id, u.first_name, u.last_name, u.profile_picture 
-    FROM chat_messages cm 
-    JOIN users u ON cm.user_id = u.user_id 
-    WHERE cm.community_id = ? 
-    ORDER BY cm.created_at ASC
-");
-$messages_query->bind_param("i", $community_id);
-$messages_query->execute();
-$messages_result = $messages_query->get_result();
-
-// Fetch community members for the modal
+// Fetch group members for the modal
 $members_query = $conn->prepare("
-    SELECT u.user_id, u.first_name, u.last_name, u.profile_picture, cm.role 
-    FROM community_members cm 
-    JOIN users u ON cm.user_id = u.user_id 
-    WHERE cm.community_id = ?
+    SELECT u.user_id, u.first_name, u.last_name, u.profile_picture 
+    FROM trip_group_members tgm 
+    JOIN users u ON tgm.user_id = u.user_id 
+    WHERE tgm.group_id = ?
 ");
-$members_query->bind_param("i", $community_id);
+$members_query->bind_param("i", $group_id);
 $members_query->execute();
 $members_result = $members_query->get_result();
 
@@ -76,16 +66,28 @@ $members_result = $members_query->get_result();
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['message'])) {
     $message = trim($_POST['message']);
     if (!empty($message)) {
-        $insert_query = $conn->prepare("INSERT INTO chat_messages (community_id, user_id, message) VALUES (?, ?, ?)");
-        $insert_query->bind_param("iis", $community_id, $user_id, $message);
+        $insert_query = $conn->prepare("INSERT INTO chat_messages (group_id, user_id, message) VALUES (?, ?, ?)");
+        $insert_query->bind_param("iis", $group_id, $user_id, $message);
         if ($insert_query->execute()) {
-            header("Location: community_chat.php?community_id=" . $community_id);
+            header("Location: chat_group.php?trip_id=" . $trip_id);
             exit();
         } else {
             $error_message = "Failed to send message. Please try again.";
         }
     }
 }
+
+// Fetch chat messages for this trip group
+$messages_query = $conn->prepare("
+    SELECT cm.message_id, cm.message, cm.created_at, u.user_id, u.first_name, u.last_name, u.profile_picture 
+    FROM chat_messages cm 
+    JOIN users u ON cm.user_id = u.user_id 
+    WHERE cm.group_id = ? 
+    ORDER BY cm.created_at ASC
+");
+$messages_query->bind_param("i", $group_id);
+$messages_query->execute();
+$messages_result = $messages_query->get_result();
 ?>
 
 <!DOCTYPE html>
@@ -93,7 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['message'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat - <?= htmlspecialchars($community['name']) ?> - Syngo</title>
+    <title>Chat - <?= htmlspecialchars($trip_title) ?> - Syngo</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -167,8 +169,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['message'])) {
         <div class="bg-white shadow-lg rounded-lg overflow-hidden">
             <div class="p-4 sm:p-6 flex flex-col h-full">
                 <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl sm:text-2xl font-semibold text-gray-800">Community Chat - <?= htmlspecialchars($community['name']) ?></h2>
-                    <button onclick="document.getElementById('membersModal').classList.remove('hidden')" class="!rounded-button px-3 sm:px-4 py-2 bg-primary text-white text-sm hover:bg-primary/90">Community Members</button>
+                    <h2 class="text-xl sm:text-2xl font-semibold text-gray-800">Group Chat - <?= htmlspecialchars($trip_title) ?></h2>
+                    <button onclick="document.getElementById('membersModal').classList.remove('hidden')" class="!rounded-button px-3 sm:px-4 py-2 bg-primary text-white text-sm hover:bg-primary/90">Group Members</button>
                 </div>
 
                 <!-- Error Message -->
@@ -216,7 +218,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['message'])) {
     <div id="membersModal" class="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50 hidden z-50">
         <div class="bg-white p-4 sm:p-6 rounded-lg max-w-md w-full max-h-[80vh] overflow-y-auto custom-scrollbar">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg sm:text-xl font-semibold text-gray-800">Community Members</h3>
+                <h3 class="text-lg sm:text-xl font-semibold text-gray-800">Group Members</h3>
                 <button onclick="document.getElementById('membersModal').classList.add('hidden')" class="text-gray-500 hover:text-gray-700">
                     <i class="ri-close-line text-xl"></i>
                 </button>
@@ -226,21 +228,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['message'])) {
                     <li class="flex items-center justify-between p-2 hover:bg-gray-50 rounded-md">
                         <a href="member.php?user_id=<?= $member['user_id'] ?>" class="flex items-center gap-3">
                             <img src="<?= $member['profile_picture'] ?: 'https://public.readdy.ai/ai/img_res/cb6fd3e7b68878d46ddacbc3d3415e6d.jpg' ?>" class="w-8 h-8 rounded-full object-cover">
-                            <div>
-                                <span class="text-xs sm:text-sm"><?= htmlspecialchars($member['first_name'] . " " . $member['last_name']) ?></span>
-                                <span class="text-xs text-gray-500 block"><?= htmlspecialchars($member['role']) ?></span>
-                            </div>
+                            <span class="text-xs sm:text-sm"><?= htmlspecialchars($member['first_name'] . " " . $member['last_name']) ?></span>
                         </a>
                         <button class="text-xs text-primary hover:text-primary/80" onclick="alert('Private chat feature coming soon!')">Chat</button>
                     </li>
                 <?php endwhile; ?>
             </ul>
-            
         </div>
     </div>
 
     <!-- Hidden Form for Chat Submission -->
-    <form id="chatForm" method="POST" action="community_chat.php?community_id=<?= $community_id ?>" class="hidden"></form>
+    <form id="chatForm" method="POST" action="chat_group.php?trip_id=<?= $trip_id ?>" class="hidden"></form>
 
     <script>
         // Auto-scroll to the bottom of the chat messages
